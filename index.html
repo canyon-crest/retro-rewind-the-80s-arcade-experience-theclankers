@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <title>Q5Play Game</title>
+  </head>
+  <body>
+    <main></main>
+    <!-- ONLINE LINKS -->
+    <script type="module" src="https://q5js.org/q5.js"></script>
+    <script type="importmap">
+      { "imports": {
+        "box2d3-wasm": "https://q5play.org/Box2D.deluxe.mjs"
+      } }
+    </script>
+    <script type="module" src="https://q5play.org/q5play.js"></script>
+
+    <!-- YOUR SKETCH -->
+    <script type="module" src="./assets/scripts/sketch.js"></script>
+  </body>
+</html>
