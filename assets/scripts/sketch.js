@@ -1,5 +1,6 @@
 //Imports
 import { Player } from './player.js';
+import { GameCamera } from './camera.js';
 
 await Canvas();
 
@@ -7,6 +8,8 @@ await Canvas();
 world.gravity.y = 10;
 
 let player = new Player();
+
+let gameCamera = new GameCamera(player);
 
 let floor = new Sprite();
 floor.y = 90;
@@ -17,4 +20,5 @@ floor.physics = STATIC;
 q5.update = function () {
   background('skyblue');
   player.move(floor);
+  gameCamera.followXY(player);
 };
