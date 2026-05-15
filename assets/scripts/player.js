@@ -1,3 +1,5 @@
+import { Floor, Wall } from './hitbox.js';
+
 export class Player {
   constructor() {
     this.sprite = new Sprite();
@@ -6,15 +8,11 @@ export class Player {
     this.sprite.fill = 'red';
   }
 
-  isTouchingFloor(floor) {
-    let playerBottom = this.sprite.y + this.sprite.h / 2;
-    let floorTop = floor.y - floor.h / 2;
-    let closeToFloor = playerBottom >= floorTop - 10 && this.sprite.vel.y >= 0;
-
-    return this.sprite.colliding(floor) > 0 || closeToFloor;
+  isTouchingFloor() {
+    return Floor.touching(this.sprite);
   }
 
-  move(floor) {
+  move() {
     this.sprite.vel.x = 0;
 
     let horVel = 5;
@@ -23,6 +21,6 @@ export class Player {
     
     if (kb.pressing('arrowRight')) this.sprite.vel.x = horVel;
 
-    if (kb.presses('arrowUp') && this.isTouchingFloor(floor)) this.sprite.vel.y = -1 * vertVel;
+    if (kb.presses('arrowUp') && this.isTouchingFloor()) this.sprite.vel.y = -1 * vertVel;
   }
 }
