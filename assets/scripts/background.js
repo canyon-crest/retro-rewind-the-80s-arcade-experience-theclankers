@@ -2,22 +2,25 @@ function wrap(value, size) {
   return ((value % size) + size) % size;
 }
 
-const BACKGROUND_SCALE = 4;
+const BACKGROUND_SCALE = 1;
 
 function drawParallaxLayer(img, speed) {
   let tileW = img.width * BACKGROUND_SCALE;
   let tileH = img.height * BACKGROUND_SCALE;
 
-  if (!tileW) return;
+  if (!Number.isFinite(tileW) || !Number.isFinite(tileH) || tileW <= 0 || tileH <= 0) {
+    return;
+  }
 
   let left = -width / 2;
-  let right = width / 2;
-  let top = height / 2 - tileH;
+  // Keep the background aligned to the world's Y axis while drawing with the camera off.
+  let top = height / 2 - tileH - camera.y;
   let offset = wrap(camera.x * speed, tileW);
-
   let startX = left - offset - tileW;
+  let tilesNeeded = ceil(width / tileW) + 3;
 
-  for (let x = startX; x < right + tileW; x += tileW) {
+  for (let i = 0; i < tilesNeeded; i++) {
+    let x = startX + i * tileW;
     image(img, x, top, tileW, tileH);
   }
 }
