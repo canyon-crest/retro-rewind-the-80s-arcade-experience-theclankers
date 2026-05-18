@@ -38,8 +38,24 @@ export class Wall {
   }
   
   static touching(player) {
-    return Wall.all.some(wall => {
-      return -1;
-    })
+    return Wall.jumpDirection(player) !== 0;
+  }
+
+  static jumpDirection(player) {
+    for (let wall of Wall.all) {
+      let playerHalfWidth = player.w / 2;
+      let playerHalfHeight = player.h / 2;
+      let wallHalfWidth = wall.sprite.w / 2;
+      let wallHalfHeight = wall.sprite.h / 2;
+      let verticalOverlap = Math.abs(player.y - wall.sprite.y) <= playerHalfHeight + wallHalfHeight;
+      let wallDistance = Math.abs(player.x - wall.sprite.x);
+      let closeToWall = wallDistance <= playerHalfWidth + wallHalfWidth + 6;
+
+      if (verticalOverlap && (player.colliding(wall.sprite) > 0 || closeToWall)) {
+        return player.x < wall.sprite.x ? -1 : 1;
+      }
+    }
+
+    return 0;
   }
 }
