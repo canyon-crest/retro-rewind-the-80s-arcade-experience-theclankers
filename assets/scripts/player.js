@@ -1,4 +1,4 @@
-import { Floor, Wall } from './hitbox.js';
+import { Floor, Wall } from './envObjects.js';
 
 export class Player {
   constructor() {
