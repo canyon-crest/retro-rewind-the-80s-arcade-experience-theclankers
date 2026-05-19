@@ -15,7 +15,7 @@ export class Floor {
     return Floor.all.some(floor => {
       let playerBottom = player.y + player.h / 2;
       let floorTop = floor.sprite.y - floor.sprite.h / 2;
-      let closeToFloor = playerBottom >= floorTop - 10 && player.vel.y >= 0;
+      let closeToFloor = playerBottom >= floorTop - 1 && playerBottom <= floorTop + 20 && player.vel.y >= 0;
 
       return player.colliding(floor.sprite) > 0 || closeToFloor;
     })

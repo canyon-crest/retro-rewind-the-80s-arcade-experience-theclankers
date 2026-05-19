@@ -8,7 +8,7 @@ function testScene(player) {
   let dj = new DoubleJumpUnlockItem(500,5);
   let wc = new WallClingUnlockItem(250,5)
   let dash = new DashUnlockItem(150,5);
-  let enemy = new Enemy(player);
+  let enemy = new Enemy(player, 350, -70);
 
   return [enemy];
 }

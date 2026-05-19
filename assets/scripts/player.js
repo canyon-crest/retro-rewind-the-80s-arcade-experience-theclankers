@@ -1,15 +1,24 @@
 import { Floor, Wall } from './envObjects.js';
 import { ABILITIES, loadSaveData, saveSaveData } from './saveData.js';
+import { addCharacterAnimations } from './animation.js';
 
 export class Player {
   constructor() {
     this.sprite = new Sprite();
-    this.sprite.diameter = 50;
     this.sprite.y = -70;
-    this.sprite.fill = 'red';
+    this.sprite.w = 30;
+    this.sprite.h = 120;
+    this.sprite.rotationLock = true;
+    addCharacterAnimations(this.sprite, 'Samurai');
+
+
+    this.sprite.anis.idle.scale = 2;
+    this.sprite.anis.run.scale = 2;
+
     this.saveData = loadSaveData();
     this.abilities = this.saveData.abilities;
     this.facingDirection = 1;
+    this.currentAnimation = '';
     this.dashSpeed = 14;
     this.dashDuration = 10;
     this.dashCooldown = 35;
@@ -22,6 +31,60 @@ export class Player {
     this.wallJumpHorizontalSpeed = 8;
     this.wallJumpVerticalSpeed = 7;
     this.wallJumpControlLock = 0;
+  }
+
+  face(direction) {
+    if (direction === 0) return;
+
+    this.facingDirection = direction;
+    this.updateFacingVisual();
+  }
+
+  updateFacingVisual() {
+    if (!this.sprite.ani) return;
+
+    let scale = Math.abs(this.sprite.ani.scale?.x || this.sprite.ani.scale || 1);
+    this.sprite.ani.scale = {
+      x: this.facingDirection * scale,
+      y: scale
+    };
+  }
+
+  setAnimation(animationName) {
+    if (this.currentAnimation === animationName) return;
+
+    this.currentAnimation = animationName;
+    this.sprite.changeAni(animationName);
+    this.updateFacingVisual();
+  }
+
+  updateAnimation() {
+
+    if (this.isDashing() || Math.abs(this.sprite.vel.x) > 0.1) {
+      this.setAnimation('run');
+      return;
+    }
+
+    this.setAnimation('idle');
+  }
+
+  snapToFloor() {
+    if (this.sprite.vel.y < 0) return;
+
+    for (let floor of Floor.all) {
+      let playerBottom = this.sprite.y + this.sprite.h / 2;
+      let floorTop = floor.sprite.y - floor.sprite.h / 2;
+      let floorLeft = floor.sprite.x - floor.sprite.w / 2;
+      let floorRight = floor.sprite.x + floor.sprite.w / 2;
+      let playerOverFloor = this.sprite.x >= floorLeft && this.sprite.x <= floorRight;
+      let closeToFloor = playerBottom >= floorTop && playerBottom <= floorTop + 20;
+
+      if (playerOverFloor && closeToFloor) {
+        this.sprite.y = floorTop - this.sprite.h / 2;
+        this.sprite.vel.y = 0;
+        return;
+      }
+    }
   }
 
   isTouchingFloor() {
@@ -110,7 +173,7 @@ export class Player {
     let jumpDirection = this.wallJumpDirection();
     this.sprite.vel.x = jumpDirection * this.wallJumpHorizontalSpeed;
     this.sprite.vel.y = -1 * this.wallJumpVerticalSpeed;
-    this.facingDirection = jumpDirection;
+    this.face(jumpDirection);
     this.wallJumpControlLock = 8;
     return true;
   }
@@ -126,6 +189,8 @@ export class Player {
 
   move() {
     this.updateDashTimers();
+    this.snapToFloor();
+
     if (this.isTouchingFloor() || this.wallJumpDirection() !== 0) {
       this.airDashAvailable = true;
       this.doubleJumpAvailable = true;
@@ -136,24 +201,27 @@ export class Player {
     if (this.isDashing()) {
       this.sprite.vel.x = this.facingDirection * this.dashSpeed;
       this.sprite.vel.y = 0;
+      this.updateAnimation();
       return;
     }
 
     if (this.wallJumpControlLock <= 0) this.sprite.vel.x = 0;
 
     let horVel = 5;
-    if (this.wallJumpControlLock <= 0 && kb.pressing('arrowLeft')) {
+    if (this.wallJumpControlLock <= 0 && kb.pressing('left')) {
       this.sprite.vel.x = -1 * horVel;
-      this.facingDirection = -1;
+      this.face(-1);
     }
     
-    if (this.wallJumpControlLock <= 0 && kb.pressing('arrowRight')) {
+    if (this.wallJumpControlLock <= 0 && kb.pressing('right')) {
       this.sprite.vel.x = horVel;
-      this.facingDirection = 1;
+      this.face(1);
     }
 
     if (kb.presses('z')) this.jump();
 
     if (kb.presses('c')) this.startDash();
+
+    this.updateAnimation();
   }
 }

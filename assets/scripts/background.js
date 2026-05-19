@@ -2,7 +2,7 @@ function wrap(value, size) {
   return ((value % size) + size) % size;
 }
 
-const BACKGROUND_SCALE = 1;
+const BACKGROUND_SCALE = 4;
 
 function drawParallaxLayer(img, speed) {
   let tileW = img.width * BACKGROUND_SCALE;
