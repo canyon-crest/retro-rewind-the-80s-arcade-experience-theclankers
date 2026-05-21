@@ -16,6 +16,12 @@ export class Enemy {
     this.sprite.anis.idle.scale = 2;
     this.sprite.anis.run.scale = 2;
 
+    this.health = 2;
+    this.isDead = false;
+    this.hitFlashTimer = 0;
+    this.hitFlashDuration = 6;
+    this.normalOpacity = 1;
+    this.hitFlashOpacity = 0.45;
     this.maxSpeed = 3;
     this.sightRange = 300;
     this.facingDirection = 1;
@@ -29,6 +35,32 @@ export class Enemy {
 
   isTouchingFloor() {
     return Floor.touching(this.sprite);
+  }
+
+  takeDamage(amount) {
+    if (this.isDead) return;
+
+    this.health -= amount;
+    if (this.health > 0) {
+      this.hitFlashTimer = this.hitFlashDuration;
+      this.updateHitFlash();
+      return;
+    }
+
+    this.isDead = true;
+    this.sprite.delete();
+  }
+
+  updateHitFlash() {
+    if (this.isDead) return;
+
+    if (this.hitFlashTimer > 0) {
+      this.sprite.opacity = this.hitFlashOpacity;
+      this.hitFlashTimer--;
+      return;
+    }
+
+    this.sprite.opacity = this.normalOpacity;
   }
 
   normalizeVector(vector) {
@@ -113,6 +145,7 @@ export class Enemy {
   }
 
   getDebugVectors() {
+    if (this.isDead) return [];
     if (!this.canSeePlayer()) return [];
 
     let seekVectors = this.getSeekVectors();
@@ -130,6 +163,10 @@ export class Enemy {
   }
 
   move() {
+    this.updateHitFlash();
+
+    if (this.isDead) return;
+
     if (!this.canSeePlayer()) {
       this.sprite.vel.x = 0;
       this.setAnimation('idle');

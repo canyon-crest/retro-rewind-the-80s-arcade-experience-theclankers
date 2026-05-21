@@ -14,11 +14,30 @@ export class Player {
 
     this.sprite.anis.idle.scale = 2;
     this.sprite.anis.run.scale = 2;
+    this.sprite.anis.attack1.scale = 2;
+    this.sprite.anis.attack2.scale = 2;
+    this.sprite.anis.attack3.scale = 2;
 
     this.saveData = loadSaveData();
     this.abilities = this.saveData.abilities;
     this.facingDirection = 1;
     this.currentAnimation = '';
+    this.attackDamage = 1;
+    this.attackDurations = {
+      1: 24,
+      2: 30,
+      3: 24
+    };
+    this.attackTimer = 0;
+    this.attackComboStage = 0;
+    this.attackComboTimer = 0;
+    this.attackComboWindow = 100;
+    this.attackQueued = false;
+    this.attackHasHit = false;
+    this.attackHitbox = {
+      w: 65,
+      h: 80
+    };
     this.dashSpeed = 14;
     this.dashDuration = 10;
     this.dashCooldown = 35;
@@ -59,6 +78,10 @@ export class Player {
   }
 
   updateAnimation() {
+    if (this.isAttacking()) {
+      this.setAnimation(`attack${Math.min(this.attackComboStage, 3)}`);
+      return;
+    }
 
     if (this.isDashing() || Math.abs(this.sprite.vel.x) > 0.1) {
       this.setAnimation('run');
@@ -151,6 +174,86 @@ export class Player {
     if (this.dashCooldownTimer > 0) this.dashCooldownTimer--;
   }
 
+  canAttack() {
+    return this.attackTimer <= 0 && (this.attackComboStage === 0 || this.attackComboTimer > 0);
+  }
+
+  isAttacking() {
+    return this.attackTimer > 0;
+  }
+
+  startAttackStage(stage) {
+    if (stage < 1 || stage > 3) return false;
+
+    this.attackComboStage = stage;
+    this.attackTimer = this.attackDurations[stage] || this.attackDurations[1];
+    this.attackComboTimer = this.attackComboWindow;
+    this.attackHasHit = false;
+    this.attackQueued = false;
+    return true;
+  }
+
+  startAttack() {
+    if (this.isAttacking()) {
+      if (this.attackComboStage < 3) this.attackQueued = true;
+      return true;
+    }
+
+    if (this.attackComboStage > 0 && this.attackComboTimer > 0) {
+      if (this.attackComboStage >= 3) {
+        return this.startAttackStage(1);
+      }
+
+      return this.startAttackStage(this.attackComboStage + 1);
+    }
+
+    return this.startAttackStage(1);
+  }
+
+  updateAttackTimers() {
+    if (this.attackTimer > 0) this.attackTimer--;
+    if (this.attackComboTimer > 0) this.attackComboTimer--;
+
+    if (this.attackTimer <= 0 && this.attackQueued && this.attackComboTimer > 0 && this.attackComboStage < 3) {
+      this.startAttackStage(this.attackComboStage + 1);
+      return;
+    }
+
+    if (this.attackTimer <= 0 && this.attackComboTimer <= 0) {
+      this.attackComboStage = 0;
+      this.attackQueued = false;
+      this.attackHasHit = false;
+    }
+  }
+
+  getAttackHitbox() {
+    let hitbox = this.attackHitbox;
+
+    return {
+      x: this.sprite.x + this.facingDirection * (this.sprite.w / 2 + hitbox.w / 2),
+      y: this.sprite.y,
+      w: hitbox.w,
+      h: hitbox.h
+    };
+  }
+
+  hitboxOverlapsSprite(hitbox, sprite) {
+    return Math.abs(hitbox.x - sprite.x) < (hitbox.w + sprite.w) / 2
+      && Math.abs(hitbox.y - sprite.y) < (hitbox.h + sprite.h) / 2;
+  }
+
+  checkAttackHits(enemies = []) {
+    if (!this.isAttacking() || this.attackHasHit) return;
+
+    let hitbox = this.getAttackHitbox();
+    let enemy = enemies.find(enemy => !enemy.isDead && this.hitboxOverlapsSprite(hitbox, enemy.sprite));
+
+    if (!enemy) return;
+
+    enemy.takeDamage(this.attackDamage);
+    this.attackHasHit = true;
+  }
+
   canWallJump() {
     return this.hasAbility(ABILITIES.WALL_CLING) && !this.isTouchingFloor() && this.wallJumpDirection() !== 0;
   }
@@ -187,8 +290,9 @@ export class Player {
     return this.startWallJump() || this.startDoubleJump();
   }
 
-  move() {
+  move(enemies = []) {
     this.updateDashTimers();
+    this.updateAttackTimers();
     this.snapToFloor();
 
     if (this.isTouchingFloor() || this.wallJumpDirection() !== 0) {
@@ -221,6 +325,10 @@ export class Player {
     if (kb.presses('z')) this.jump();
 
     if (kb.presses('c')) this.startDash();
+
+    if (kb.presses('x')) this.startAttack();
+
+    this.checkAttackHits(enemies);
 
     this.updateAnimation();
   }

@@ -7,9 +7,14 @@ export function addCharacterAnimations(sprite, character) {
 
   sprite.addAni('idle', base + 'Idle.png', { width: frameSize, height: frameSize, frames: 6 });
   sprite.addAni('run', base + 'Run.png', { width: frameSize, height: frameSize, frames: runFrames });
+  if (character === 'Samurai') {
+    sprite.addAni('attack1', base + 'Attack_1.png', { width: frameSize, height: frameSize, frames: 4 });
+    sprite.addAni('attack2', base + 'Attack_2.png', { width: frameSize, height: frameSize, frames: 5 });
+    sprite.addAni('attack3', base + 'Attack_3.png', { width: frameSize, height: frameSize, frames: 4 });
+  }
   //sprite.addAni('jump', base + 'Jump.png', { width: 128, height: 128, frames: 9 });
 
-  for (let animation of [sprite.anis.idle, sprite.anis.run]) {
+  for (let animation of [sprite.anis.idle, sprite.anis.run, sprite.anis.attack1, sprite.anis.attack2, sprite.anis.attack3].filter(Boolean)) {
     animation.frameDelay = character === 'Ninja_Peasant' ? 10 : 6;
     animation.scale = visualScale;
     animation.offset = visualOffset;

@@ -21,7 +21,7 @@ let gameCamera = new GameCamera(player);
 let enemies = drawScenes(player);
 
 q5.update = function () {
-  player.move();
+  player.move(enemies);
   enemies.forEach(enemy => enemy.move());
   gameCamera.followXY();
 
