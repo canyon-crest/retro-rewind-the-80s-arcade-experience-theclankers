@@ -29,5 +29,5 @@ q5.update = function () {
   updateUnlockItems(player);
   background('white');
   drawBackground(gameBackground);
-  debug(enemies);
+  debug({ player, enemies });
 };

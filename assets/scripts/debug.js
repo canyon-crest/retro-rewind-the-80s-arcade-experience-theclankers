@@ -1,6 +1,12 @@
 import { DDEBUG } from './globalVar.js'
 import { Floor, Wall } from './envObjects.js'
 
+const DEBUG_HITBOX_COLORS = {
+  enemy: '#ff4d4d',
+  player: '#3b82f6',
+  playerAttack: '#22c55e'
+};
+
 function drawDebugVector(origin, debugVector, scale) {
   let endX = origin.x + debugVector.vector.x * scale;
   let endY = origin.y + debugVector.vector.y * scale;
@@ -39,7 +45,33 @@ function drawEnemyVectors(enemy) {
   });
 }
 
-export function debug(debugObjects = []) {
+function drawSpriteHitbox(sprite, color) {
+  if (!sprite) return;
+
+  push();
+  noFill();
+  stroke(color);
+  strokeWeight(2);
+  rectMode(CENTER);
+  rect(sprite.x, sprite.y, sprite.w, sprite.h);
+  pop();
+}
+
+function drawPlayerAttackHitbox(player, color) {
+  if (!player?.getAttackHitbox || !player.isAttacking?.()) return;
+
+  let hitbox = player.getAttackHitbox();
+
+  push();
+  noFill();
+  stroke(color);
+  strokeWeight(2);
+  rectMode(CENTER);
+  rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h);
+  pop();
+}
+
+export function debug({ player = null, enemies = [] } = {}) {
   Floor.all.forEach(floor => {
     floor.sprite.visible = DDEBUG.full;
   });
@@ -52,7 +84,10 @@ export function debug(debugObjects = []) {
     let wasCameraActive = camera.isActive;
 
     camera.on();
-    debugObjects.forEach(drawEnemyVectors);
+    enemies.forEach(drawEnemyVectors);
+    enemies.forEach(enemy => drawSpriteHitbox(enemy.sprite, DEBUG_HITBOX_COLORS.enemy));
+    drawSpriteHitbox(player?.sprite, DEBUG_HITBOX_COLORS.player);
+    drawPlayerAttackHitbox(player, DEBUG_HITBOX_COLORS.playerAttack);
 
     if (!wasCameraActive) camera.off();
   }

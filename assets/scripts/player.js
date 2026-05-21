@@ -311,7 +311,7 @@ export class Player {
 
     if (this.wallJumpControlLock <= 0) this.sprite.vel.x = 0;
 
-    let horVel = 5;
+    let horVel = 2;
     if (this.wallJumpControlLock <= 0 && kb.pressing('left')) {
       this.sprite.vel.x = -1 * horVel;
       this.face(-1);
