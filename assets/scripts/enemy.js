@@ -16,13 +16,13 @@ export class Enemy {
     this.sprite.anis.idle.scale = 2;
     this.sprite.anis.run.scale = 2;
 
-    this.health = 2;
+    this.health = 1000;
     this.isDead = false;
     this.hitFlashTimer = 0;
     this.hitFlashDuration = 6;
     this.normalOpacity = 1;
     this.hitFlashOpacity = 0.45;
-    this.maxSpeed = 3;
+    this.maxSpeed = 1;
     this.sightRange = 300;
     this.facingDirection = 1;
     this.jumpStrength = 5;

@@ -5,9 +5,9 @@ import { addCharacterAnimations } from './animation.js';
 export class Player {
   constructor() {
     this.sprite = new Sprite();
-    this.sprite.y = -70;
+    this.sprite.y = -40;
     this.sprite.w = 30;
-    this.sprite.h = 120;
+    this.sprite.h = 60;
     this.sprite.rotationLock = true;
     addCharacterAnimations(this.sprite, 'Samurai');
 
@@ -34,9 +34,10 @@ export class Player {
     this.attackComboWindow = 100;
     this.attackQueued = false;
     this.attackHasHit = false;
-    this.attackHitbox = {
-      w: 65,
-      h: 80
+    this.attackHitboxes = {
+      1: { w: 50, h: 30 },
+      2: { w: 50, h: 100 },
+      3: { w: 50, h: 40 }
     };
     this.dashSpeed = 14;
     this.dashDuration = 10;
@@ -226,12 +227,12 @@ export class Player {
     }
   }
 
-  getAttackHitbox() {
-    let hitbox = this.attackHitbox;
+  getAttackHitbox(stage = this.attackComboStage) {
+    let hitbox = this.attackHitboxes[stage] || this.attackHitboxes[1];
 
     return {
       x: this.sprite.x + this.facingDirection * (this.sprite.w / 2 + hitbox.w / 2),
-      y: this.sprite.y,
+      y: this.sprite.y + (stage == 1 ? 20 : stage == 2 ? 0 : 0) ,
       w: hitbox.w,
       h: hitbox.h
     };
