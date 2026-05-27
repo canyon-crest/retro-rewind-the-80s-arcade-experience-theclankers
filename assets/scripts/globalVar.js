@@ -1,6 +1,6 @@
 export var DDEBUG = DDEBUG || {};
 
-DDEBUG.full = true;
+DDEBUG.full = false;
 
 let debugToggle = document.querySelector('#debug-toggle');
 

@@ -22,7 +22,7 @@ export class Player {
     this.abilities = this.saveData.abilities;
     this.facingDirection = 1;
     this.currentAnimation = '';
-    this.maxHealth = 5;
+    this.maxHealth = 10000;
     this.health = this.maxHealth;
     this.isDead = false;
     this.invulnerabilityDuration = 45;

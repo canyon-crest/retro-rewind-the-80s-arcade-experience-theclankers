@@ -1,35 +1,100 @@
 import { Floor } from './envObjects.js';
-import { addCharacterAnimations } from './animation.js';
+import { addCharacterAnimations, addDemonSlimeAnimations } from './animation.js';
+
+export const ENEMY_PRESETS = {
+  NINJA_PEASANT: {
+    character: 'Ninja_Peasant',
+    health: 3,
+    maxSpeed: 1,
+    attackDamage: 1,
+    attackRange: 55,
+    attackHeightRange: 80,
+    w: 30,
+    h: 90,
+    animationScale: 2
+  },
+  KUNOICHI: {
+    character: 'Kunoichi',
+    health: 2,
+    maxSpeed: 1.35,
+    attackDamage: 1,
+    attackRange: 58,
+    attackHeightRange: 80,
+    w: 28,
+    h: 82,
+    animationScale: 1.8,
+    animationOffset: { x: 0, y: -12 }
+  },
+  NINJA_MONK: {
+    character: 'Ninja_Monk',
+    health: 5,
+    maxSpeed: 0.9,
+    attackDamage: 1,
+    attackRange: 60,
+    attackHeightRange: 88,
+    w: 34,
+    h: 92,
+    animationScale: 2
+  },
+  KITSUNE: {
+    character: 'Kitsune',
+    health: 4,
+    maxSpeed: 1.45,
+    attackDamage: 2,
+    attackRange: 65,
+    attackHeightRange: 90,
+    w: 34,
+    h: 86,
+    animationScale: 1.8
+  },
+  YAMABUSHI_TENGU: {
+    character: 'Yamabushi_tengu',
+    health: 6,
+    maxSpeed: 1.05,
+    attackDamage: 2,
+    attackRange: 68,
+    attackHeightRange: 95,
+    w: 36,
+    h: 96,
+    animationScale: 1.85
+  }
+};
 
 export class Enemy {
-  constructor(player, x = 350, y = -70) {
+  constructor(player, x = 350, y = 160, config = ENEMY_PRESETS.NINJA_PEASANT) {
+    this.config = { ...ENEMY_PRESETS.NINJA_PEASANT, ...config };
     this.player = player;
     this.sprite = new Sprite();
-    this.sprite.w = 30;
-    this.sprite.h = 90;
+    this.sprite.w = this.config.w;
+    this.sprite.h = this.config.h;
     this.sprite.y = y;
     this.sprite.x = x;
     this.sprite.rotationLock = true;
 
-    addCharacterAnimations(this.sprite, 'Ninja_Peasant');
+    if (this.config.isBoss) {
+      addDemonSlimeAnimations(this.sprite, { scale: this.config.animationScale });
+    } else {
+      addCharacterAnimations(this.sprite, this.config.character, {
+        scale: this.config.animationScale,
+        offset: this.config.animationOffset
+      });
+    }
     this.currentAnimation = '';
-    this.sprite.anis.idle.scale = 2;
-    this.sprite.anis.run.scale = 2;
-    this.sprite.anis.attack1.scale = 2;
 
-    this.health = 3;
+    this.health = this.config.health;
+    this.isBoss = false;
     this.isDead = false;
     this.hitFlashTimer = 0;
     this.hitFlashDuration = 6;
     this.normalOpacity = 1;
     this.hitFlashOpacity = 0.45;
-    this.maxSpeed = 1;
+    this.maxSpeed = this.config.maxSpeed;
     this.sightRange = 900;
     this.facingDirection = 1;
     this.jumpStrength = 5;
-    this.attackRange = 55;
-    this.attackHeightRange = 80;
-    this.attackDamage = 1;
+    this.attackRange = this.config.attackRange;
+    this.attackHeightRange = this.config.attackHeightRange;
+    this.attackDamage = this.config.attackDamage;
     this.attackDuration = 42;
     this.attackHitFrame = 18;
     this.attackCooldown = 70;
@@ -257,8 +322,84 @@ export class Enemy {
   setAnimation(animationName) {
     if (this.currentAnimation === animationName) return;
 
+    if (!this.sprite.anis?.[animationName]) {
+      this._missingAnimations ??= {};
+      if (!this._missingAnimations[animationName]) {
+        console.warn('Missing animation', animationName, {
+          isBoss: this.isBoss,
+          character: this.config.character
+        });
+        this._missingAnimations[animationName] = true;
+      }
+      return;
+    }
+
     this.currentAnimation = animationName;
     this.sprite.changeAni(animationName);
     this.updateFacingVisual();
+  }
+}
+
+export class BossEnemy extends Enemy {
+  constructor(player, x = 0, y = -220) {
+    super(player, x, y, {
+      character: 'Demon_Slime',
+      health: 35,
+      maxSpeed: 0.7,
+      attackDamage: 2,
+      attackRange: 95,
+      attackHeightRange: 120,
+      w: 110,
+      h: 120,
+      animationScale: 2,
+      isBoss: true
+    });
+
+    this.isBoss = true;
+    this.currentAnimation = '';
+    this.attackDuration = 60;
+    this.attackHitFrame = 26;
+    this.attackCooldown = 95;
+    this.sightRange = 1200;
+    this.landingComplete = false;
+  }
+
+  facePlayer() {
+    this.facingDirection = this.player.sprite.x >= this.sprite.x ? 1 : -1;
+    this.updateFacingVisual();
+  }
+
+  updateFacingVisual() {
+    if (!this.sprite.ani) return;
+
+    let aniScaleX = this.sprite.ani.scale?.x ?? this.sprite.ani.scale ?? 1;
+    let aniScaleY = this.sprite.ani.scale?.y ?? this.sprite.ani.scale ?? 1;
+
+    this.sprite.ani.scale = {
+      x: Math.abs(aniScaleX),
+      y: Math.abs(aniScaleY)
+    };
+
+    this.sprite.scale = {
+      x: -1*this.facingDirection,
+      y: 1
+    };
+  }
+
+  move() {
+    this.updateHitFlash();
+
+    if (this.isDead) return;
+
+    if (!this.landingComplete) {
+      this.facePlayer();
+      this.sprite.vel.x = 0;
+      this.setAnimation('idle');
+      if (this.isTouchingFloor()) this.landingComplete = true;
+      return;
+    }
+
+    this.facePlayer();
+    super.move();
   }
 }
