@@ -116,6 +116,12 @@ canvas {
   margin-top: 12px;
 }
 
+.start-controls {
+  font-size: 14px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
 .start-button {
   margin-top: 18px;
   border: 2px solid #101010;
