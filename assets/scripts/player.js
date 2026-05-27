@@ -5,9 +5,9 @@ import { addCharacterAnimations } from './animation.js';
 export class Player {
   constructor() {
     this.sprite = new Sprite();
-    this.sprite.y = -40;
-    this.sprite.w = 30;
-    this.sprite.h = 60;
+    this.sprite.y = 145;
+    this.sprite.w = 26;
+    this.sprite.h = 120;
     this.sprite.rotationLock = true;
     addCharacterAnimations(this.sprite, 'Samurai');
 
@@ -22,6 +22,14 @@ export class Player {
     this.abilities = this.saveData.abilities;
     this.facingDirection = 1;
     this.currentAnimation = '';
+    this.maxHealth = 5;
+    this.health = this.maxHealth;
+    this.isDead = false;
+    this.invulnerabilityDuration = 45;
+    this.invulnerabilityTimer = 0;
+    this.staggerDuration = 18;
+    this.staggerTimer = 0;
+    this.staggerKnockbackSpeed = 5;
     this.attackDamage = 1;
     this.attackDurations = {
       1: 24,
@@ -78,6 +86,57 @@ export class Player {
     this.updateFacingVisual();
   }
 
+  isAlive() {
+    return !this.isDead;
+  }
+
+  takeDamage(amount, sourceX = this.sprite.x) {
+    if (this.isDead || this.invulnerabilityTimer > 0) return false;
+
+    this.health = Math.max(0, this.health - amount);
+    this.invulnerabilityTimer = this.invulnerabilityDuration;
+    this.staggerTimer = this.staggerDuration;
+
+    let knockbackDirection = Math.sign(this.sprite.x - sourceX) || -this.facingDirection || 1;
+    this.sprite.vel.x = knockbackDirection * this.staggerKnockbackSpeed;
+    this.sprite.vel.y = Math.min(this.sprite.vel.y, -2);
+
+    if (this.health <= 0) {
+      this.isDead = true;
+      this.sprite.vel.x = 0;
+      this.staggerTimer = 0;
+      this.attackTimer = 0;
+      this.attackComboStage = 0;
+      this.attackQueued = false;
+      this.setAnimation('idle');
+    }
+
+    return true;
+  }
+
+  heal(amount) {
+    if (this.isDead) return false;
+
+    this.health = Math.min(this.maxHealth, this.health + amount);
+    return true;
+  }
+
+  updateInvulnerability() {
+    if (this.invulnerabilityTimer > 0) this.invulnerabilityTimer--;
+
+    this.sprite.opacity = this.invulnerabilityTimer > 0 && Math.floor(this.invulnerabilityTimer / 5) % 2 === 0
+      ? 0.45
+      : 1;
+  }
+
+  updateStagger() {
+    if (this.staggerTimer > 0) this.staggerTimer--;
+  }
+
+  isStaggered() {
+    return this.staggerTimer > 0;
+  }
+
   updateAnimation() {
     if (this.isAttacking()) {
       this.setAnimation(`attack${Math.min(this.attackComboStage, 3)}`);
@@ -101,7 +160,7 @@ export class Player {
       let floorLeft = floor.sprite.x - floor.sprite.w / 2;
       let floorRight = floor.sprite.x + floor.sprite.w / 2;
       let playerOverFloor = this.sprite.x >= floorLeft && this.sprite.x <= floorRight;
-      let closeToFloor = playerBottom >= floorTop && playerBottom <= floorTop + 20;
+      let closeToFloor = playerBottom >= floorTop - 2 && playerBottom <= floorTop + 24;
 
       if (playerOverFloor && closeToFloor) {
         this.sprite.y = floorTop - this.sprite.h / 2;
@@ -243,7 +302,7 @@ export class Player {
       && Math.abs(hitbox.y - sprite.y) < (hitbox.h + sprite.h) / 2;
   }
 
-  checkAttackHits(enemies = []) {
+  checkAttackHits(enemies = [], onEnemyKilled = () => {}) {
     if (!this.isAttacking() || this.attackHasHit) return;
 
     let hitbox = this.getAttackHitbox();
@@ -251,8 +310,10 @@ export class Player {
 
     if (!enemy) return;
 
-    enemy.takeDamage(this.attackDamage);
+    let killedEnemy = enemy.takeDamage(this.attackDamage);
     this.attackHasHit = true;
+
+    if (killedEnemy) onEnemyKilled(enemy);
   }
 
   canWallJump() {
@@ -291,7 +352,17 @@ export class Player {
     return this.startWallJump() || this.startDoubleJump();
   }
 
-  move(enemies = []) {
+  move(enemies = [], onEnemyKilled = () => {}) {
+    this.updateInvulnerability();
+
+    if (this.isDead) {
+      this.sprite.vel.x = 0;
+      this.sprite.opacity = 1;
+      this.updateAnimation();
+      return;
+    }
+
+    this.updateStagger();
     this.updateDashTimers();
     this.updateAttackTimers();
     this.snapToFloor();
@@ -302,6 +373,11 @@ export class Player {
     }
 
     if (this.wallJumpControlLock > 0) this.wallJumpControlLock--;
+
+    if (this.isStaggered()) {
+      this.updateAnimation();
+      return;
+    }
 
     if (this.isDashing()) {
       this.sprite.vel.x = this.facingDirection * this.dashSpeed;
@@ -329,7 +405,7 @@ export class Player {
 
     if (kb.presses('x')) this.startAttack();
 
-    this.checkAttackHits(enemies);
+    this.checkAttackHits(enemies, onEnemyKilled);
 
     this.updateAnimation();
   }

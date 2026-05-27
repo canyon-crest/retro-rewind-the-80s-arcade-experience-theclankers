@@ -7,8 +7,10 @@ export function addCharacterAnimations(sprite, character) {
 
   sprite.addAni('idle', base + 'Idle.png', { width: frameSize, height: frameSize, frames: 6 });
   sprite.addAni('run', base + 'Run.png', { width: frameSize, height: frameSize, frames: runFrames });
-  if (character === 'Samurai') {
+  if (character === 'Samurai' || character === 'Ninja_Peasant') {
     sprite.addAni('attack1', base + 'Attack_1.png', { width: frameSize, height: frameSize, frames: 4 });
+  }
+  if (character === 'Samurai') {
     sprite.addAni('attack2', base + 'Attack_2.png', { width: frameSize, height: frameSize, frames: 5 });
     sprite.addAni('attack3', base + 'Attack_3.png', { width: frameSize, height: frameSize, frames: 4 });
   }

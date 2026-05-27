@@ -15,17 +15,27 @@ export class Enemy {
     this.currentAnimation = '';
     this.sprite.anis.idle.scale = 2;
     this.sprite.anis.run.scale = 2;
+    this.sprite.anis.attack1.scale = 2;
 
-    this.health = 1000;
+    this.health = 3;
     this.isDead = false;
     this.hitFlashTimer = 0;
     this.hitFlashDuration = 6;
     this.normalOpacity = 1;
     this.hitFlashOpacity = 0.45;
     this.maxSpeed = 1;
-    this.sightRange = 300;
+    this.sightRange = 900;
     this.facingDirection = 1;
     this.jumpStrength = 5;
+    this.attackRange = 55;
+    this.attackHeightRange = 80;
+    this.attackDamage = 1;
+    this.attackDuration = 42;
+    this.attackHitFrame = 18;
+    this.attackCooldown = 70;
+    this.attackTimer = 0;
+    this.attackCooldownTimer = 0;
+    this.attackHasHit = false;
     this.vectorWeights = {
       playerSeek: 1,
       heightSeek: 0.25,
@@ -38,17 +48,18 @@ export class Enemy {
   }
 
   takeDamage(amount) {
-    if (this.isDead) return;
+    if (this.isDead) return false;
 
     this.health -= amount;
     if (this.health > 0) {
       this.hitFlashTimer = this.hitFlashDuration;
       this.updateHitFlash();
-      return;
+      return false;
     }
 
     this.isDead = true;
     this.sprite.delete();
+    return true;
   }
 
   updateHitFlash() {
@@ -91,6 +102,45 @@ export class Enemy {
 
   canSeePlayer() {
     return this.distanceToPlayer() <= this.sightRange;
+  }
+
+  isAttacking() {
+    return this.attackTimer > 0;
+  }
+
+  canReachPlayer() {
+    return Math.abs(this.player.sprite.x - this.sprite.x) <= this.attackRange
+      && Math.abs(this.player.sprite.y - this.sprite.y) <= this.attackHeightRange;
+  }
+
+  canStartAttack() {
+    return this.attackCooldownTimer <= 0
+      && this.player.isAlive?.()
+      && this.canReachPlayer();
+  }
+
+  startAttack() {
+    this.sprite.vel.x = 0;
+    this.attackTimer = this.attackDuration;
+    this.attackCooldownTimer = this.attackCooldown;
+    this.attackHasHit = false;
+    this.face(Math.sign(this.player.sprite.x - this.sprite.x));
+    this.setAnimation('attack1');
+  }
+
+  updateAttackTimers() {
+    if (this.attackCooldownTimer > 0) this.attackCooldownTimer--;
+    if (this.attackTimer <= 0) return;
+
+    this.attackTimer--;
+    this.sprite.vel.x = 0;
+    this.face(Math.sign(this.player.sprite.x - this.sprite.x));
+    this.setAnimation('attack1');
+
+    if (!this.attackHasHit && this.attackTimer <= this.attackHitFrame && this.canReachPlayer()) {
+      this.player.takeDamage?.(this.attackDamage, this.sprite.x);
+      this.attackHasHit = true;
+    }
   }
 
   face(direction) {
@@ -167,9 +217,24 @@ export class Enemy {
 
     if (this.isDead) return;
 
+    this.updateAttackTimers();
+
+    if (this.isAttacking()) return;
+
+    if (!this.player.isAlive?.()) {
+      this.sprite.vel.x = 0;
+      this.setAnimation('idle');
+      return;
+    }
+
     if (!this.canSeePlayer()) {
       this.sprite.vel.x = 0;
       this.setAnimation('idle');
+      return;
+    }
+
+    if (this.canStartAttack()) {
+      this.startAttack();
       return;
     }
 
@@ -185,7 +250,7 @@ export class Enemy {
   }
 
   updateAnimation() {
-    let animationName = Math.abs(this.sprite.vel.x) > 0.1 ? 'run' : 'idle';
+    let animationName = this.isAttacking() ? 'attack1' : Math.abs(this.sprite.vel.x) > 0.1 ? 'run' : 'idle';
     this.setAnimation(animationName);
   }
 

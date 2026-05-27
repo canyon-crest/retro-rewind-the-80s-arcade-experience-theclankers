@@ -9,6 +9,17 @@
   </head>
   <body>
     <main></main>
+    <div id="game-hud" class="game-hud" aria-live="polite">
+      <div id="hp-display">HP: 5/5</div>
+      <div id="kill-display">Kills: 0</div>
+    </div>
+    <div id="game-over-overlay" class="game-over-overlay" hidden>
+      <section class="game-over-panel" aria-labelledby="game-over-title">
+        <h1 id="game-over-title">GAME OVER</h1>
+        <p id="final-kills">Kills: 0</p>
+        <p>Reload to try again</p>
+      </section>
+    </div>
     <button id="debug-toggle" class="debug-toggle" type="button" aria-pressed="false">
       Debug: Off
     </button>
