@@ -11,7 +11,45 @@ import { debug } from './debug.js';
 
 await Canvas(960, 540);
 
-console.info('Sketch loaded');
+const cherryAudio = new Audio(new URL('../sound/samurai-ost-cherry-blossom-path.wav', import.meta.url).href);
+const deathAudio = new Audio(new URL('../sound/samurai-ost-battle-at-dawn.wav', import.meta.url).href);
+const deathClipDurationMs = 6000;
+let audioUnlocked = false;
+let deathClipTimer = null;
+let gameStarted = false;
+
+cherryAudio.loop = true;
+deathAudio.loop = false;
+
+function playCherryLoop() {
+  if (!audioUnlocked) return;
+  cherryAudio.play().catch(() => {});
+}
+
+function stopCherryLoop() {
+  if (!cherryAudio.paused) cherryAudio.pause();
+  cherryAudio.currentTime = 0;
+}
+
+function playDeathClip() {
+  if (!audioUnlocked) return;
+  deathAudio.pause();
+  deathAudio.currentTime = 0;
+  deathAudio.play().catch(() => {});
+
+  if (deathClipTimer) clearTimeout(deathClipTimer);
+  deathClipTimer = setTimeout(() => {
+    deathAudio.pause();
+    deathAudio.currentTime = 0;
+    deathClipTimer = null;
+  }, deathClipDurationMs);
+}
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  playCherryLoop();
+}
 
 await preloadDemonSlimeAnimations();
 
@@ -41,6 +79,8 @@ let gameOverOverlay = document.querySelector('#game-over-overlay');
 let gameOverTitle = document.querySelector('#game-over-title');
 let finalKillsDisplay = document.querySelector('#final-kills');
 let gameOverMessage = document.querySelector('.game-over-panel p:last-child');
+let startOverlay = document.querySelector('#start-overlay');
+let startButton = document.querySelector('#start-button');
 
 function activeEnemies() {
   return enemies.filter(enemy => !enemy.isDead);
@@ -160,6 +200,8 @@ function endGame() {
   if (gameOverHandled) return;
 
   gameOverHandled = true;
+  stopCherryLoop();
+  playDeathClip();
   showEndOverlay('GAME OVER', 'Reload to try again');
 }
 
@@ -173,6 +215,16 @@ function completeGame() {
 }
 
 q5.update = function () {
+  if (!gameStarted) {
+    gameCamera.followXY();
+    clear();
+    background('white');
+    drawBackground(gameBackground);
+    debug({ player, enemies });
+    updateHud();
+    return;
+  }
+
   if (!gameOver && !gameWon) {
     player.move(enemies, recordEnemyKill);
     enemies.forEach(enemy => enemy.move());
@@ -195,4 +247,15 @@ q5.update = function () {
   debug({ player, enemies });
   updateHud();
 };
+
+function startGame() {
+  if (gameStarted) return;
+  gameStarted = true;
+  if (startOverlay) startOverlay.hidden = true;
+  unlockAudio();
+}
+
+if (startButton) {
+  startButton.addEventListener('click', startGame);
+}
 
